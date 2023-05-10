@@ -24,7 +24,13 @@
         <dependency>
             <groupId>cisd</groupId>
             <artifactId>jhdf5</artifactId>
-            <version>14.12.5</version>
+            <version>14.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jhdf</groupId>
+            <artifactId>jhdf</artifactId>
+            <version>0.5.8</version>
         </dependency>
     </dependencies>
+
 </project>
