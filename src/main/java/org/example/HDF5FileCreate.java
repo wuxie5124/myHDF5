@@ -2,10 +2,8 @@ package org.example;
 
 import ncsa.hdf.hdf5lib.H5;
 import ncsa.hdf.hdf5lib.HDF5Constants;
-import io.jhdf.HdfFile;
-import io.jhdf.api.Dataset;
-import io.jhdf.api.Group;
-import io.jhdf.api.Node;
+import ncsa.hdf.hdf5lib.structs.H5G_info_t;
+
 public class HDF5FileCreate {
     // The name of the file we'll create.
     private static String fname = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf1_20190703T00Z.h5";
@@ -18,8 +16,15 @@ public class HDF5FileCreate {
 //            file_id = H5.H5Fcreate(fname, HDF5Constants.H5F_ACC_TRUNC,
 //                    HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
             file_id = H5.H5Fopen(fname, HDF5Constants.H5F_ACC_RDONLY, HDF5Constants.H5P_DEFAULT);
-        }
-        catch (Exception e) {
+            int waterLevel;
+            if (file_id >= 0) {
+                int dataset_id = H5.H5Gopen(file_id, "Group_F", HDF5Constants.H5P_DEFAULT);
+                if (dataset_id>0) {
+                    waterLevel = H5.H5Dopen(dataset_id, "WaterLevel", HDF5Constants.H5P_DEFAULT);
+                    System.out.println(waterLevel);
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Failed to create file:" + fname);
             return;
@@ -29,8 +34,7 @@ public class HDF5FileCreate {
         try {
             if (file_id >= 0)
                 H5.H5Fclose(file_id);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

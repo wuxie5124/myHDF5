@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
 import ncsa.hdf.hdf5lib.H5;
 import ncsa.hdf.hdf5lib.HDF5Constants;
@@ -18,9 +18,11 @@ import io.jhdf.api.Dataset;
 import io.jhdf.api.Group;
 import io.jhdf.api.Node;
 
+import static java.util.stream.Collectors.joining;
+
 public class Hdf5LibBenchmark {
 
-    private static final String TEST_FILE = "/home/james/git/jhdf.git/jhdf/src/test/resources/io/jhdf/test_large_datasets_earliest.hdf5";
+    private static final String TEST_FILE = "D:\\DATA\\海图\\S104\\104US00_ches_dcf2_20190606T12Z.h5";
     private static final int REPEATS = 1000;
 
     private static final Map<Class<?>, Integer> hdf5TypesMap;
