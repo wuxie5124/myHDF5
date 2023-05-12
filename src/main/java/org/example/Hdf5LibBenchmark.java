@@ -22,7 +22,7 @@ import static java.util.stream.Collectors.joining;
 
 public class Hdf5LibBenchmark {
 
-    private static final String TEST_FILE = "D:\\DATA\\海图\\S104\\104US00_ches_dcf2_20190606T12Z.h5";
+    private static final String TEST_FILE = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf1_20190703T00Z.h5";
     private static final int REPEATS = 1000;
 
     private static final Map<Class<?>, Integer> hdf5TypesMap;

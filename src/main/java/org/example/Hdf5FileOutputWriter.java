@@ -4,7 +4,7 @@ import ncsa.hdf.hdf5lib.H5;
 import ncsa.hdf.hdf5lib.HDF5Constants;
 
 public class Hdf5FileOutputWriter {
-    private static String fname = "rec1498945830.hdf5";
+    private static String fname = "rec1498945830.h5";
     private static String dsname = "dvs";
     private static long[] dims2D = {10, 10};
 
@@ -39,7 +39,7 @@ public class Hdf5FileOutputWriter {
         H5.H5Sget_simple_extent_dims(space_id,dims,dims2);
 
 
-        int[][] dataRead = new int[0][0];
+        int[][] dataRead = new int[10][10];
         try {
             if (dataset_id >= 0)
                 H5.H5Dread(dataset_id, HDF5Constants.H5T_NATIVE_INT,
