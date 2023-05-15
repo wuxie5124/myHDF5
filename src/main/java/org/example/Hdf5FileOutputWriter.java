@@ -1,7 +1,7 @@
 package org.example;
 
-import ncsa.hdf.hdf5lib.H5;
-import ncsa.hdf.hdf5lib.HDF5Constants;
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
 
 public class Hdf5FileOutputWriter {
     private static String fname = "rec1498945830.h5";
@@ -9,8 +9,8 @@ public class Hdf5FileOutputWriter {
     private static long[] dims2D = {10, 10};
 
     public static void main(String args[]) throws Exception {
-        int file_id = -1;
-        int dataset_id = -1;
+        long file_id = -1;
+        long dataset_id = -1;
 
         // create the file and add groups and dataset into the file
         createFile();
@@ -35,7 +35,7 @@ public class Hdf5FileOutputWriter {
 //        int[][] dataRead = new int[(int) dims2D[0]][(int) (dims2D[1])];
         long[] dims = {0,0};
         long[] dims2 = {0,0};
-        int space_id = H5.H5Dget_space(dataset_id);
+        long space_id = H5.H5Dget_space(dataset_id);
         H5.H5Sget_simple_extent_dims(space_id,dims,dims2);
 
 
@@ -121,9 +121,9 @@ public class Hdf5FileOutputWriter {
      * @see HDF5DatasetCreate.H5DatasetCreate
      */
     private static void createFile() throws Exception {
-        int file_id = -1;
-        int dataspace_id = -1;
-        int dataset_id = -1;
+        long file_id = -1;
+        long dataspace_id = -1;
+        long dataset_id = -1;
 
         // Create a new file using default properties.
         try {

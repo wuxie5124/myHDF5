@@ -11,8 +11,8 @@ import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import ncsa.hdf.hdf5lib.H5;
-import ncsa.hdf.hdf5lib.HDF5Constants;
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
 import io.jhdf.HdfFile;
 import io.jhdf.api.Dataset;
 import io.jhdf.api.Group;
@@ -25,7 +25,7 @@ public class Hdf5LibBenchmark {
     private static final String TEST_FILE = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf1_20190703T00Z.h5";
     private static final int REPEATS = 1000;
 
-    private static final Map<Class<?>, Integer> hdf5TypesMap;
+    private static final Map<Class<?>, Long> hdf5TypesMap;
     static {
         hdf5TypesMap = new HashMap<>();
         hdf5TypesMap.put(int.class, HDF5Constants.H5T_NATIVE_INT32);
@@ -77,9 +77,9 @@ public class Hdf5LibBenchmark {
             // Now test the HDF5 group libiary
 
             // Open file using the default properties.
-            int fileId = H5.H5Fopen(TEST_FILE, HDF5Constants.H5F_ACC_RDWR, HDF5Constants.H5P_DEFAULT);
+            long fileId = H5.H5Fopen(TEST_FILE, HDF5Constants.H5F_ACC_RDWR, HDF5Constants.H5P_DEFAULT);
             // Open dataset using the default properties.
-            int datasetId = H5.H5Dopen(fileId, datasetInfo.getPath(), HDF5Constants.H5P_DEFAULT);
+            long datasetId = H5.H5Dopen(fileId, datasetInfo.getPath(), HDF5Constants.H5P_DEFAULT);
             // Make the array to fill. jHDF does this internally
             Object data = Array.newInstance(datasetInfo.getType(), datasetInfo.getDims());
 

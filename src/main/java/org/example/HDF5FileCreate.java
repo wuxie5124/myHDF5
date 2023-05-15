@@ -1,8 +1,7 @@
 package org.example;
 
-import ncsa.hdf.hdf5lib.H5;
-import ncsa.hdf.hdf5lib.HDF5Constants;
-import ncsa.hdf.hdf5lib.structs.H5G_info_t;
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
 
 public class HDF5FileCreate {
     // The name of the file we'll create.
@@ -15,12 +14,12 @@ public class HDF5FileCreate {
         try {
 //            file_id = H5.H5Fcreate(fname, HDF5Constants.H5F_ACC_TRUNC,
 //                    HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
-            file_id = H5.H5Fopen(fname, HDF5Constants.H5F_ACC_RDONLY, HDF5Constants.H5P_DEFAULT);
+            file_id = (int) H5.H5Fopen(fname, HDF5Constants.H5F_ACC_RDONLY, HDF5Constants.H5P_DEFAULT);
             int waterLevel;
             if (file_id >= 0) {
-                int dataset_id = H5.H5Gopen(file_id, "Group_F", HDF5Constants.H5P_DEFAULT);
+                int dataset_id = (int) H5.H5Gopen(file_id, "Group_F", HDF5Constants.H5P_DEFAULT);
                 if (dataset_id>0) {
-                    waterLevel = H5.H5Dopen(dataset_id, "WaterLevel", HDF5Constants.H5P_DEFAULT);
+                    waterLevel = (int) H5.H5Dopen(dataset_id, "WaterLevel", HDF5Constants.H5P_DEFAULT);
                     System.out.println(waterLevel);
                 }
             }

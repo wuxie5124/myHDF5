@@ -1,10 +1,10 @@
 package org.example;
 
-import ncsa.hdf.hdf5lib.H5;
-import ncsa.hdf.hdf5lib.HDF5Constants;
-import ncsa.hdf.hdf5lib.exceptions.HDF5LibraryException;
-
-import static ncsa.hdf.hdf5lib.HDF5Constants.H5P_DEFAULT;
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
+import hdf.hdf5lib.exceptions.HDF5LibraryException;
+import static hdf.hdf5lib.H5.*;
+import static hdf.hdf5lib.HDF5Constants.H5P_DEFAULT;
 
 public class myRead2 {
     // 读取数据结构
@@ -12,26 +12,62 @@ public class myRead2 {
     // 读取数据描述信息
 
     public static void main(String[] args) {
-        String filePath = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf1_20190703T00Z.h5";
+        String filePath = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf2_20190606T12Z.h5";
         String OriginPaths = "/";
-        int file_id = -1;
+        long file_id = -1;
 
         try {
             file_id = H5.H5Fopen(filePath, HDF5Constants.H5F_ACC_RDWR, H5P_DEFAULT);
             if (file_id > 0) {
 //                getStructure(file_id,OriginPaths);
-                int dataset_id = H5.H5Dopen(file_id, "WaterLevel/axisNames", H5P_DEFAULT);
+                long dataset_id = H5.H5Dopen(file_id, "Group_F/WaterLevel", H5P_DEFAULT);
+                //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
+                long[] dims = {0, 0};
+                long[] dims2 = {0, 0};
+                String attrName = "chunking";
+                long attr_id = H5Aopen(dataset_id,attrName,H5P_DEFAULT);
+                long attr_tid = H5Aget_type(attr_id);
+//                HDF5Utils.getDatasetType(attr_id, attr_tid);
+                String[] attrData = new String[1];
+                for (int i = 0; i <attrData.length; i++) {
+                    attrData[i] = "";
+                }
 
-                String[][] dataRead = new String[10][10];
-                String[] object = new String[5];
-//                double[] data = new double[5];
-//                int memtype_id = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, 3);
+                int tidDD = (int) H5.H5Tget_native_type(attr_tid);
+                try {
+                    int i3 = H5AreadVL(attr_id, attr_tid, attrData);
+                }
+                catch (Exception ex) {
+                    ex.printStackTrace();
+                }
 
-                H5.H5Dread(dataset_id, HDF5Constants.H5T_STRING,
+
+                long space_id = H5.H5Dget_space(dataset_id);
+                H5.H5Sget_simple_extent_dims(space_id, dims, dims2);
+                int dim = H5.H5Sget_simple_extent_ndims(space_id);
+                String[] strings = new String[(int) dims[0]];
+                long tid = H5.H5Dget_type(dataset_id);
+                long ntid = H5.H5Tget_native_type(tid);
+                boolean b = H5.H5Tis_variable_str(ntid);
+                long i = H5.H5Tget_size(ntid);
+                int i2 = H5.H5Tget_nmembers(tid);//返回复杂属性的成员数目
+                String s = H5Tget_member_name(tid, 0);//返回名称
+                int codeindex = H5Tget_member_index(tid, "code");
+                boolean b1 = H5Tget_class(tid) == HDF5Constants.H5T_COMPOUND;
+
+                String[] ss = new String[3];
+                H5.H5Dread_VLStrings(dataset_id, tid,
                         HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL,
-                        HDF5Constants.H5P_DEFAULT, object);
-//                int i = H5.H5Dread(dataset_id, 0, data);
-                int i = 0;
+                        HDF5Constants.H5P_DEFAULT, ss);
+//                long size = 0;
+//                H5.H5Dvlen_get_buf_size(dataset_id, tid , size);
+                String[] stringsA = new String[30];
+                H5.H5DreadVL(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, stringsA);
+                int nums = 0;
+                int i1 = H5.H5Tget_member_class(tid, 6);
+                int length = strings.length;
+
+
             }
         } catch (HDF5LibraryException e) {
             throw new RuntimeException(e);

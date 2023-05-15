@@ -13,8 +13,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import ncsa.hdf.hdf5lib.H5;
-import ncsa.hdf.hdf5lib.HDF5Constants;
+import hdf.hdf5lib.H5;
+import hdf.hdf5lib.HDF5Constants;
 
 public class Example {
     private static String FILENAME ="C:\\Users\\zjm\\Desktop\\104US00_ches_dcf1_20190703T00Z.h5";//原始.h5文件路径
@@ -91,7 +91,7 @@ public class Example {
 
         //遍历.h5下边的所有数据集，并以数组的方式返回数据集名称
         private static String[] do_iterate() {
-            int file_id = -1;
+            long file_id = -1;
 
             // Open a file using default properties.
             try {
@@ -178,11 +178,11 @@ public class Example {
 
     //读取表结构数据集
     private static void ReadDataset() {
-        int file_id = -1;
-        int strtype_id = -1;
-        int memtype_id = -1;
-        int dataspace_id = -1;
-        int dataset_id = -1;
+        long file_id = -1;
+        long strtype_id = -1;
+        long memtype_id = -1;
+        long dataspace_id = -1;
+        long dataset_id = -1;
         long[] dims = { DIM0 };
         Sensor[] object_data2 = new Sensor[(int) dims[0]];;
         byte[] dset_data;
@@ -247,7 +247,7 @@ public class Example {
                 memtype_id = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, Sensor_Datatype.getDataSize());
                 if (memtype_id >= 0) {
                     for (int indx = 0; indx < Sensor_Datatype.numberMembers; indx++) {
-                        int type_id = (int) Sensor_Datatype.memberMemTypes[indx];
+                        long type_id = (int) Sensor_Datatype.memberMemTypes[indx];
                         if (type_id == HDF5Constants.H5T_C_S1)
                             type_id = strtype_id;
                         H5.H5Tinsert(memtype_id, Sensor_Datatype.memberNames[indx], Sensor_Datatype.getOffset(indx),
