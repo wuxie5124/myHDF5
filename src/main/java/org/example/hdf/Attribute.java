@@ -9,7 +9,6 @@ public class Attribute implements IAttribute{
         this.node = node;
         this.data = data;
     }
-
     @Override
     public String getName() {
         return name;

@@ -3,6 +3,12 @@ package org.example;
 import hdf.hdf5lib.H5;
 import hdf.hdf5lib.HDF5Constants;
 import hdf.hdf5lib.exceptions.HDF5LibraryException;
+import hdf.hdf5lib.structs.H5O_info_t;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
+
 import static hdf.hdf5lib.H5.*;
 import static hdf.hdf5lib.HDF5Constants.H5P_DEFAULT;
 
@@ -15,33 +21,33 @@ public class myRead2 {
         String filePath = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf2_20190606T12Z.h5";
         String OriginPaths = "/";
         long file_id = -1;
-
+        HashMap<String,Object> attributes = new HashMap<>();
         try {
             file_id = H5.H5Fopen(filePath, HDF5Constants.H5F_ACC_RDWR, H5P_DEFAULT);
             if (file_id > 0) {
 //                getStructure(file_id,OriginPaths);
-                long dataset_id = H5.H5Dopen(file_id, "Group_F/WaterLevel", H5P_DEFAULT);
+//                long dataset_id = H5.H5Dopen(file_id, "/", H5P_DEFAULT);
+                long dataset_id = H5Gopen(file_id, "/", H5P_DEFAULT);
                 //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
                 long[] dims = {0, 0};
                 long[] dims2 = {0, 0};
-                String attrName = "chunking";
-                long attr_id = H5Aopen(dataset_id,attrName,H5P_DEFAULT);
-                long attr_tid = H5Aget_type(attr_id);
-//                HDF5Utils.getDatasetType(attr_id, attr_tid);
-                String[] attrData = new String[1];
-                for (int i = 0; i <attrData.length; i++) {
-                    attrData[i] = "";
+                H5O_info_t info = H5Oget_info(file_id);
+                for (int i = 0; i < info.num_attrs; i++) {
+                    //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
+                    long attributeId = H5.H5Aopen_by_idx(dataset_id, ".", HDF5Constants.H5_INDEX_CRT_ORDER, HDF5Constants.H5_ITER_INC, i, HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+                    String name = H5Aget_name(attributeId);
+                    int size = (int) H5.H5Aget_storage_size(attributeId);
+                    byte[] data = new byte[size];
+                    long attributeType = H5Aget_type(attributeId);
+                    boolean b = H5Tget_class(attributeType) == HDF5Constants.H5T_STRING;
+                    String s = H5Tget_member_name(attributeType, 0);
+                    H5.H5Aread(attributeId,attributeType,data);
+                    attributes.put(name,data);
+                    H5.H5Aclose(attributeId);
                 }
-
-                int tidDD = (int) H5.H5Tget_native_type(attr_tid);
-                try {
-                    int i3 = H5AreadVL(attr_id, attr_tid, attrData);
-                }
-                catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-
-
+                ByteBuffer byteBuffer = ByteBuffer.wrap((byte[]) attributes.get("eastBoundLongitude"));
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                double anInt = byteBuffer.getDouble();
                 long space_id = H5.H5Dget_space(dataset_id);
                 H5.H5Sget_simple_extent_dims(space_id, dims, dims2);
                 int dim = H5.H5Sget_simple_extent_ndims(space_id);
