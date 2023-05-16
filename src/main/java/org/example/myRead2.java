@@ -18,12 +18,13 @@ public class myRead2 {
     // 读取数据描述信息
 
     public static void main(String[] args) {
-        String filePath = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf2_20190606T12Z.h5";
+        String filePath = "D:\\QQmessage\\1309756024\\FileRecv\\S104\\S104\\104US00_ches_dcf2_20190606T12Z.h5";
         String OriginPaths = "/";
         long file_id = -1;
         HashMap<String,Object> attributes = new HashMap<>();
         try {
             file_id = H5.H5Fopen(filePath, HDF5Constants.H5F_ACC_RDWR, H5P_DEFAULT);
+            getStructure(file_id,"/");
             if (file_id > 0) {
 //                getStructure(file_id,OriginPaths);
 //                long dataset_id = H5.H5Dopen(file_id, "/", H5P_DEFAULT);
@@ -82,7 +83,7 @@ public class myRead2 {
         }
     }
 
-    private static void getStructure(int fileId, String originPaths) {
+    private static void getStructure(long fileId, String originPaths) {
         int dataset_id = -1;
         int count = (int) H5.H5Gn_members(fileId, originPaths);
         String[] oname = new String[count];

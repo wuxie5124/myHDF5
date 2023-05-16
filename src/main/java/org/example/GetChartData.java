@@ -19,20 +19,54 @@ public class GetChartData {
 
     public void getChartData(String filePath) {
         this.fileID = H5.H5Fopen(filePath, HDF5Constants.H5F_ACC_RDWR, H5P_DEFAULT);
-        String pathRoot = "/";
-        getGroupAttribute(pathRoot);
-        getGroupAttribute("WaterLevel");
+        getGroupAttribute("/");
+        String waterLevel = "WaterLevel";
+        getGroupAttribute(waterLevel);
 
+
+        int count = (int) H5.H5Gn_members(this.fileID, waterLevel);
+        String[] oname = new String[count];
+        int[] otype = new int[count];
+        int[] ltype = new int[count];
+        long[] orefs = new long[count];
+        int index = -1;
+        index = H5.H5Gget_obj_info_all(this.fileID, waterLevel, oname, otype, ltype, orefs, HDF5Constants.H5_INDEX_NAME);
+        for (int i = 0; i < oname.length; i++) {
+            if (otype[i] == 0) {
+                String waterL = oname[i];
+                String waterLPath = waterLevel + "/" + waterL;
+                getGroupAttribute(waterLPath);
+                String[] onameSub = new String[count];
+                int[] otypeSub = new int[count];
+                int[] ltypeSub = new int[count];
+                long[] orefsSub = new long[count];
+                H5Gget_obj_info_all(this.fileID, waterLPath, onameSub, otypeSub, ltypeSub, orefsSub, HDF5Constants.H5_INDEX_NAME);
+                removeElement("Positioning",onameSub);
+                for (String group : onameSub) {
+                    String groupPath = waterLPath + "/" + group;
+                    getGroupAttribute(groupPath);
+                }
+            }
+        }
+    }
+
+    private boolean removeElement(String name, String[] names) {
+        for (String na : names) {
+            if (name.equals(na)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void getGroupAttribute(String path) {
         long rootID = H5.H5Gopen(fileID, path, H5P_DEFAULT);
-        getAttribution(rootID,path);
+        getAttribution(rootID, path);
     }
 
     private void getDatasetAttribute(String path) {
         long rootID = H5.H5Dopen(fileID, path, H5P_DEFAULT);
-        getAttribution(rootID,path);
+        getAttribution(rootID, path);
     }
 
     private void getAttribution(long rootID, String path) {
