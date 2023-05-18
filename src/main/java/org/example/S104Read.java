@@ -3,9 +3,9 @@ package org.example;
 import hdf.hdf5lib.H5;
 import hdf.hdf5lib.HDF5Constants;
 
-import java.awt.event.WindowAdapter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,12 +72,54 @@ public class S104Read {
     }
 
     private void getDdcf8() {
+        String waterLevelPath = "WaterLevel";
+        int count = (int) H5.H5Gn_members(this.fileID, waterLevelPath);
+        String[] oname = new String[count];
+        int[] otype = new int[count];
+        int[] ltype = new int[count];
+        long[] orefs = new long[count];
+        int index = -1;
+        index = H5.H5Gget_obj_info_all(this.fileID, waterLevelPath, oname, otype, ltype, orefs, HDF5Constants.H5_INDEX_NAME);
+        oname = removeElement("axisNames", oname);
+        for (int i = 0; i < oname.length; i++) {
+            ChartDataset cDataset = new ChartDataset();
+            String waterL = oname[i];
+            cDataset.setName("S104_dcf" + this.dcf.getId() + "_" + waterL.split("\\.")[1] + "_value");
+            String waterLPath = waterLevelPath + "/" + waterL;
+            int countSub = (int) H5.H5Gn_members(this.fileID, waterLPath);
+            String[] onameSub = new String[countSub];
+            int[] otypeSub = new int[countSub];
+            int[] ltypeSub = new int[countSub];
+            long[] orefsSub = new long[countSub];
+            H5.H5Gget_obj_info_all(this.fileID, waterLPath, onameSub, otypeSub, ltypeSub, orefsSub, HDF5Constants.H5_INDEX_NAME);
+            onameSub = removeElement("Positioning", onameSub);
+            onameSub = removeElement("uncertainty", onameSub);
+            String PositiningPath = waterLPath + "/Positioning/geometryValues";
+            double[][] getcoordinate = getcoordinate(PositiningPath);
+            for (int j = 0; j < onameSub.length; j++) {
+                String groupName = onameSub[j];
+                String groupPath = waterLPath + "/" + groupName;
+                long group0ID = H5.H5Gopen(fileID, groupPath, H5P_DEFAULT);
+                int timeIntervalIndex = getIntAttr(group0ID, "timeIntervalIndex");
+                if (timeIntervalIndex == 1) {
+                    String startDateTime = getStringAttr(group0ID, "startDateTime");
+                    int numberOfTimes = getShorttAttr(group0ID, "numberOfTimes");
+//                    SimpleDateFormat ft = new SimpleDateFormat ("yyyyMMddTmmssSS");
+                    String datasetPath = groupPath + "/" + "values";
+//                    readDataset(cDataset, datasetPath, timePoint, getcoordinate);
+                }
+            }
+            this.chartDatasets.add(cDataset);
+        }
+
     }
 
     private void getDdcf7() {
+        getDdcf1();
     }
 
     private void getDdcf3() {
+        getDdcf1();
     }
 
     private void getDdcf2() {
