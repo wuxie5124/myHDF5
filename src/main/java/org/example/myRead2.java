@@ -21,36 +21,36 @@ public class myRead2 {
         String filePath = "C:\\Users\\zjm\\Desktop\\104US00_ches_dcf2_20190606T12Z.h5";
         String OriginPaths = "/";
         long file_id = -1;
-        HashMap<String,Object> attributes = new HashMap<>();
+        HashMap<String, Object> attributes = new HashMap<>();
         try {
             file_id = H5.H5Fopen(filePath, HDF5Constants.H5F_ACC_RDWR, H5P_DEFAULT);
-            getStructure(file_id,"/");
+//            getStructure(file_id,"/");
             Object[][] os = new Object[2][2];
 
             if (file_id > 0) {
 //                getStructure(file_id,OriginPaths);
 //                long dataset_id = H5.H5Dopen(file_id, "/", H5P_DEFAULT);
-                long dataset_id = H5Gopen(file_id, "/", H5P_DEFAULT);
+                long dataset_id = H5Dopen(file_id, "WaterLevel/WaterLevel.01/Group_002/values", H5P_DEFAULT);
                 //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
                 long[] dims = {0, 0};
                 long[] dims2 = {0, 0};
-                H5O_info_t info = H5Oget_info(file_id);
-                for (int i = 0; i < info.num_attrs; i++) {
-                    //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
-                    long attributeId = H5.H5Aopen_by_idx(dataset_id, ".", HDF5Constants.H5_INDEX_CRT_ORDER, HDF5Constants.H5_ITER_INC, i, HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
-                    String name = H5Aget_name(attributeId);
-                    int size = (int) H5.H5Aget_storage_size(attributeId);
-                    byte[] data = new byte[size];
-                    long attributeType = H5Aget_type(attributeId);
-                    boolean b = H5Tget_class(attributeType) == HDF5Constants.H5T_STRING;
-                    String s = H5Tget_member_name(attributeType, 0);
-                    H5.H5Aread(attributeId,attributeType,data);
-                    attributes.put(name,data);
-                    H5.H5Aclose(attributeId);
-                }
-                ByteBuffer byteBuffer = ByteBuffer.wrap((byte[]) attributes.get("eastBoundLongitude"));
-                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                double anInt = byteBuffer.getDouble();
+//                H5O_info_t info = H5Oget_info(file_id);
+//                for (int i = 0; i < info.num_attrs; i++) {
+//                    //WaterLevel/WaterLevel.01/Group_001/values WaterLevel/axisNames Group_F/WaterLevel
+//                    long attributeId = H5.H5Aopen_by_idx(dataset_id, ".", HDF5Constants.H5_INDEX_CRT_ORDER, HDF5Constants.H5_ITER_INC, i, HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
+//                    String name = H5Aget_name(attributeId);
+//                    int size = (int) H5.H5Aget_storage_size(attributeId);
+//                    byte[] data = new byte[size];
+//                    long attributeType = H5Aget_type(attributeId);
+//                    boolean b = H5Tget_class(attributeType) == HDF5Constants.H5T_STRING;
+//                    String s = H5Tget_member_name(attributeType, 0);
+//                    H5.H5Aread(attributeId,attributeType,data);
+//                    attributes.put(name,data);
+//                    H5.H5Aclose(attributeId);
+//                }
+//                ByteBuffer byteBuffer = ByteBuffer.wrap((byte[]) attributes.get("eastBoundLongitude"));
+//                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+//                double anInt = byteBuffer.getDouble();
                 long space_id = H5.H5Dget_space(dataset_id);
                 H5.H5Sget_simple_extent_dims(space_id, dims, dims2);
                 int dim = H5.H5Sget_simple_extent_ndims(space_id);
@@ -61,19 +61,39 @@ public class myRead2 {
                 long i = H5.H5Tget_size(ntid);
                 int i2 = H5.H5Tget_nmembers(tid);//返回复杂属性的成员数目
                 String s = H5Tget_member_name(tid, 0);//返回名称
-                int codeindex = H5Tget_member_index(tid, "code");
+//                int codeindex = H5Tget_member_index(tid, "code");
                 boolean b1 = H5Tget_class(tid) == HDF5Constants.H5T_COMPOUND;
 
-                String[] ss = new String[3];
-                H5.H5Dread_VLStrings(dataset_id, tid,
-                        HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL,
-                        HDF5Constants.H5P_DEFAULT, ss);
+//                String[] ss = new String[3];
+//                H5.H5DreadVL(dataset_id, tid,
+//                                                HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL,
+//                        HDF5Constants.H5P_DEFAULT, ss);
 //                long size = 0;
 //                H5.H5Dvlen_get_buf_size(dataset_id, tid , size);
-                String[] stringsA = new String[30];
-                H5.H5DreadVL(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, stringsA);
+//                Byte[] stringsA = new Byte[30];
+//                H5.H5Dread(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, stringsA);
+
                 int nums = 0;
-                int i1 = H5.H5Tget_member_class(tid, 6);
+                int num = 1;
+                int i1 = H5.H5Tget_member_class(tid, num);
+                String member_name = H5.H5Tget_member_name(tid, num);
+                long member_type = H5Tget_member_type(tid, num);
+                int member_class_t = H5.H5Tget_class(member_type);
+                long member_class_s = H5.H5Tget_size(member_type);
+
+                long read_tid = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND,member_class_s);
+                H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_INT32);
+                int[] intss = new int[30];
+                H5.H5Dread(dataset_id, read_tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, intss);
+
+
+                float[] floats = new float[30];
+                H5.H5Dread(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, floats);
+                int[] ints = new int[32];
+                H5.H5Dread(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, ints);
+                String[] string = new String[32];
+                H5.H5Dread_reg_ref(dataset_id, tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, string);
+
                 int length = strings.length;
 
 
