@@ -5,10 +5,9 @@ import hdf.hdf5lib.HDF5Constants;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import static hdf.hdf5lib.H5.*;
 import static hdf.hdf5lib.HDF5Constants.H5P_DEFAULT;
@@ -82,9 +81,7 @@ public class S104Read {
         index = H5.H5Gget_obj_info_all(this.fileID, waterLevelPath, oname, otype, ltype, orefs, HDF5Constants.H5_INDEX_NAME);
         oname = removeElement("axisNames", oname);
         for (int i = 0; i < oname.length; i++) {
-            ChartDataset cDataset = new ChartDataset();
             String waterL = oname[i];
-            cDataset.setName("S104_dcf" + this.dcf.getId() + "_" + waterL.split("\\.")[1] + "_value");
             String waterLPath = waterLevelPath + "/" + waterL;
             int countSub = (int) H5.H5Gn_members(this.fileID, waterLPath);
             String[] onameSub = new String[countSub];
@@ -95,23 +92,52 @@ public class S104Read {
             onameSub = removeElement("Positioning", onameSub);
             onameSub = removeElement("uncertainty", onameSub);
             String PositiningPath = waterLPath + "/Positioning/geometryValues";
-            double[][] getcoordinate = getcoordinate(PositiningPath);
+            double[][] coordinate = getcoordinate(PositiningPath);
             for (int j = 0; j < onameSub.length; j++) {
                 String groupName = onameSub[j];
                 String groupPath = waterLPath + "/" + groupName;
+                ChartDataset cDataset = new ChartDataset();
+                cDataset.setName("S104_dcf" + this.dcf.getId() + "_" + waterL.split("\\.")[1] + "_" + groupName + "_value");
                 long group0ID = H5.H5Gopen(fileID, groupPath, H5P_DEFAULT);
                 int timeIntervalIndex = getIntAttr(group0ID, "timeIntervalIndex");
+                double[] coord = new double[2];
+                coord[0] = coordinate[0][j];
+                coord[1] = coordinate[1][j];
                 if (timeIntervalIndex == 1) {
                     String startDateTime = getStringAttr(group0ID, "startDateTime");
-                    int numberOfTimes = getShorttAttr(group0ID, "numberOfTimes");
-//                    SimpleDateFormat ft = new SimpleDateFormat ("yyyyMMddTmmssSS");
+                    int numberOfTimes = getShortAttr(group0ID, "numberOfTimes");
+                    int timeRecordInterval = getShortAttr(group0ID, "timeRecordInterval");
+                    String[] timePoint = calculateDate(startDateTime, numberOfTimes, timeRecordInterval);
                     String datasetPath = groupPath + "/" + "values";
-//                    readDataset(cDataset, datasetPath, timePoint, getcoordinate);
+                    readEqualInterval(cDataset, datasetPath, timePoint, coord);
+                } else if ((timeIntervalIndex == 0)) {
+                    String datasetPath = groupPath + "/" + "values";
+                    readNotEqualInterval(cDataset, datasetPath, coord);
                 }
+                this.chartDatasets.add(cDataset);
             }
-            this.chartDatasets.add(cDataset);
+        }
+    }
+
+    private String[] calculateDate(String startDateTimeStr, int numberOfTimes, int timeRecordInterval) {
+        SimpleDateFormat ft = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
+        String[] timePoint = new String[numberOfTimes];
+        Date startDate;
+        try {
+            startDate = ft.parse(startDateTimeStr);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
         }
 
+        Calendar calendar = Calendar.getInstance();
+        for (int i = 0; i < numberOfTimes; i++) {
+            calendar.setTime(startDate);
+            calendar.add(Calendar.SECOND, timeRecordInterval * i);
+            Date currentTime = calendar.getTime();
+            String currentTimeStr = ft.format(currentTime);
+            timePoint[i] = currentTimeStr;
+        }
+        return timePoint;
     }
 
     private void getDdcf7() {
@@ -145,8 +171,8 @@ public class S104Read {
             double gridSpacingLatitudinal = getDoubleAttr(waterLevel0ID, "gridSpacingLatitudinal");
             double gridSpacingLongitudinal = getDoubleAttr(waterLevel0ID, "gridSpacingLongitudinal");
 
-            int numPointsLatitudinal = getShorttAttr(waterLevel0ID, "numPointsLatitudinal");
-            int numPointsLongitudinal = getShorttAttr(waterLevel0ID, "numPointsLongitudinal");
+            int numPointsLatitudinal = getShortAttr(waterLevel0ID, "numPointsLatitudinal");
+            int numPointsLongitudinal = getShortAttr(waterLevel0ID, "numPointsLongitudinal");
 
             double[][] getcoordinate = new double[2][];
             double[] latitude = new double[numPointsLatitudinal * numPointsLongitudinal];
@@ -235,6 +261,41 @@ public class S104Read {
         return coordinate;
     }
 
+    private void readNotEqualInterval(ChartDataset cDataset, String datasetPath, double[] coordinate) {
+        long datasetID = H5.H5Dopen(fileID, datasetPath, H5P_DEFAULT);
+        long space_id = H5.H5Dget_space(datasetID);
+        long[] dims1 = {0, 0};
+        long[] dims2 = {0, 0};
+        H5.H5Sget_simple_extent_dims(space_id, dims1, dims2);
+        long tid = H5.H5Dget_type(datasetID);
+        int dims = H5Sget_simple_extent_ndims(space_id);
+        int size = (int) (dims == 1 ? dims1[0] : dims1[0] * dims1[1]);
+        float[] height = (float[]) readCompoundData(datasetID, tid, 0, size);
+        short[] trend = (short[]) readCompoundData(datasetID, tid, 1, size);
+        String[] timePoint = (String[]) readCompoundData(datasetID, tid, 2, size);
+
+        for (int i = 0; i < height.length; i++) {
+            cDataset.addRow(new Record(height[i], trend[i], this.identifier, timePoint[i], coordinate[0], coordinate[1]));
+        }
+    }
+
+    private void readEqualInterval(ChartDataset cDataset, String datasetPath, String[] timePoint, double[] coordinate) {
+        long datasetID = H5.H5Dopen(fileID, datasetPath, H5P_DEFAULT);
+        long space_id = H5.H5Dget_space(datasetID);
+        long[] dims1 = {0, 0};
+        long[] dims2 = {0, 0};
+        H5.H5Sget_simple_extent_dims(space_id, dims1, dims2);
+        long tid = H5.H5Dget_type(datasetID);
+        int dims = H5Sget_simple_extent_ndims(space_id);
+        int size = (int) (dims == 1 ? dims1[0] : dims1[0] * dims1[1]);
+        float[] height = (float[]) readCompoundData(datasetID, tid, 0, size);
+        short[] trend = (short[]) readCompoundData(datasetID, tid, 1, size);
+
+        for (int i = 0; i < height.length; i++) {
+            cDataset.addRow(new Record(height[i], (int) trend[i], this.identifier, timePoint[i], coordinate[0], coordinate[1]));
+        }
+    }
+
     private void readDataset(ChartDataset cDataset, String datasetPath, String timePoint, double[][] coordinate) {
         long datasetID = H5.H5Dopen(fileID, datasetPath, H5P_DEFAULT);
         long space_id = H5.H5Dget_space(datasetID);
@@ -269,17 +330,27 @@ public class S104Read {
                 H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_FLOAT);
                 values = new float[len];
             }
+            H5.H5Dread(datasetID, read_tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, values);
         } else if (member_class_t == HDF5Constants.H5T_INTEGER) {
-            H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_INT32);
-            values = new int[len];
+            if (member_class_s == 4) {
+                H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_INT);
+                values = new int[len];
+            } else if (member_class_s == 2) {
+                H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_SHORT);
+                values = new short[len];
+            } else {
+                H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_LONG);
+                values = new long[len];
+            }
+            H5.H5Dread(datasetID, read_tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, values);
         } else if (member_class_t == HDF5Constants.H5T_STRING) {
-            H5.H5Tinsert(read_tid, member_name, 0, HDF5Constants.H5T_NATIVE_CHAR);
+            H5.H5Tinsert(read_tid, member_name, 0, H5Tget_native_type(member_type));
             values = new String[len];
+            H5.H5Dread_VLStrings(datasetID, read_tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, (String[]) values);
         } else {
             values = null;
             //Error
         }
-        H5.H5Dread(datasetID, read_tid, HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, values);
         return values;
     }
 
@@ -289,7 +360,7 @@ public class S104Read {
         String commonPointRule = getStringAttr(waterLevelID, "commonPointRule");
         String dataCodingFormat = getEnumAttr(waterLevelID, "dataCodingFormat");
         String methodWaterLevelProduct = getStringAttr(waterLevelID, "methodWaterLevelProduct");
-        String numInstances = String.valueOf(getShorttAttr(waterLevelID, "numInstances"));
+        String numInstances = String.valueOf(getShortAttr(waterLevelID, "numInstances"));
         String pickPriorityType = getStringAttr(waterLevelID, "pickPriorityType");
 
         attrs.add(new TabularAttr("commonPointRule", waterLevelPath, commonPointRule));
@@ -320,24 +391,25 @@ public class S104Read {
             long[] orefsSub = new long[countSub];
             H5.H5Gget_obj_info_all(this.fileID, waterLPath, onameSub, otypeSub, ltypeSub, orefsSub, HDF5Constants.H5_INDEX_NAME);
             onameSub = removeElement("Positioning", onameSub);
+            onameSub = removeElement("uncertainty", onameSub);
             for (int j = 0; j < onameSub.length; j++) {
                 String groupName = onameSub[j];
                 String groupPath = waterLPath + "/" + groupName;
                 long group0ID = H5.H5Gopen(fileID, groupPath, H5P_DEFAULT);
                 String endDateTime = getStringAttr(group0ID, "endDateTime");
-                String numberOfTime = String.valueOf(getShorttAttr(group0ID, "numberOfTime"));
+                String numberOfTimes = String.valueOf(getShortAttr(group0ID, "numberOfTimes"));
                 String startDateTime = String.valueOf(getIntAttr(group0ID, "startDateTime"));
                 String stationIdentification = String.valueOf(getIntAttr(group0ID, "stationIdentification"));
                 String stationName = getStringAttr(group0ID, "stationName");
                 String timeIntervalIndex = String.valueOf(getIntAttr(group0ID, "timeIntervalIndex"));
                 attrs.add(new TabularAttr("endDateTime", groupPath, endDateTime));
-                attrs.add(new TabularAttr("numberOfTime", groupPath, numberOfTime));
+                attrs.add(new TabularAttr("numberOfTimes", groupPath, numberOfTimes));
                 attrs.add(new TabularAttr("startDateTime", groupPath, startDateTime));
                 attrs.add(new TabularAttr("stationIdentification", groupPath, stationIdentification));
                 attrs.add(new TabularAttr("stationName", groupPath, stationName));
                 attrs.add(new TabularAttr("timeIntervalIndex", groupPath, timeIntervalIndex));
                 if (getIntAttr(group0ID, "timeIntervalIndex") == 1) {
-                    String timeRecordInterval = String.valueOf(getShorttAttr(group0ID, "timeRecordInterval"));
+                    String timeRecordInterval = String.valueOf(getShortAttr(group0ID, "timeRecordInterval"));
                     attrs.add(new TabularAttr("timeRecordInterval", groupPath, timeRecordInterval));
                 }
             }
@@ -351,7 +423,7 @@ public class S104Read {
         String dataCodingFormat = getEnumAttr(waterLevelID, "dataCodingFormat");
         String interpolationType = getEnumAttr(waterLevelID, "interpolationType");
         String methodWaterLevelProduct = getStringAttr(waterLevelID, "methodWaterLevelProduct");
-        String numInstances = String.valueOf(getShorttAttr(waterLevelID, "numInstances"));
+        String numInstances = String.valueOf(getShortAttr(waterLevelID, "numInstances"));
 
         attrs.add(new TabularAttr("commonPointRule", waterLevelPath, commonPointRule));
         attrs.add(new TabularAttr("dataCodingFormat", waterLevelPath, dataCodingFormat));
@@ -372,8 +444,8 @@ public class S104Read {
             String waterL = oname[i];
             String waterLPath = waterLevelPath + "/" + waterL;
             long waterLevel0ID = H5.H5Gopen(fileID, waterLPath, H5P_DEFAULT);
-            String numberOfTriangles = String.valueOf(getShorttAttr(waterLevel0ID, "numberOfTriangles"));
-            String timeRecordInterval = String.valueOf(getShorttAttr(waterLevel0ID, "timeRecordInterval"));
+            String numberOfTriangles = String.valueOf(getShortAttr(waterLevel0ID, "numberOfTriangles"));
+            String timeRecordInterval = String.valueOf(getShortAttr(waterLevel0ID, "timeRecordInterval"));
             String typeOfWaterLevelData = getEnumAttr(waterLevel0ID, "typeOfWaterLevelData");
             attrs.add(new TabularAttr("numberOfTriangles", waterLPath, numberOfTriangles));
             attrs.add(new TabularAttr("timeRecordInterval", waterLPath, timeRecordInterval));
@@ -389,7 +461,7 @@ public class S104Read {
         String dataCodingFormat = getEnumAttr(waterLevelID, "dataCodingFormat");
         String interpolationType = getEnumAttr(waterLevelID, "interpolationType");
         String methodWaterLevelProduct = getStringAttr(waterLevelID, "methodWaterLevelProduct");
-        String numInstances = String.valueOf(getShorttAttr(waterLevelID, "numInstances"));
+        String numInstances = String.valueOf(getShortAttr(waterLevelID, "numInstances"));
 
         attrs.add(new TabularAttr("commonPointRule", waterLevelPath, commonPointRule));
         attrs.add(new TabularAttr("dataCodingFormat", waterLevelPath, dataCodingFormat));
@@ -410,7 +482,7 @@ public class S104Read {
             String waterL = oname[i];
             String waterLPath = waterLevelPath + "/" + waterL;
             long waterLevel0ID = H5.H5Gopen(fileID, waterLPath, H5P_DEFAULT);
-            String timeRecordInterval = String.valueOf(getShorttAttr(waterLevel0ID, "timeRecordInterval"));
+            String timeRecordInterval = String.valueOf(getShortAttr(waterLevel0ID, "timeRecordInterval"));
             String typeOfWaterLevelData = getEnumAttr(waterLevel0ID, "typeOfWaterLevelData");
             attrs.add(new TabularAttr("timeRecordInterval", waterLPath, timeRecordInterval));
             attrs.add(new TabularAttr("typeOfWaterLevelData", waterLPath, typeOfWaterLevelData));
@@ -426,7 +498,7 @@ public class S104Read {
         String dataCodingFormat = getEnumAttr(waterLevelID, "dataCodingFormat");
         String interpolationType = getEnumAttr(waterLevelID, "interpolationType");
         String methodWaterLevelProduct = getStringAttr(waterLevelID, "methodWaterLevelProduct");
-        String numInstances = String.valueOf(getShorttAttr(waterLevelID, "numInstances"));
+        String numInstances = String.valueOf(getShortAttr(waterLevelID, "numInstances"));
         String sequencingRule_scanDirection = getStringAttr(waterLevelID, "sequencingRule.scanDirection");
         String sequencingRule_type = getEnumAttr(waterLevelID, "sequencingRule.type");
 
@@ -451,7 +523,7 @@ public class S104Read {
             String waterL = oname[i];
             String waterLPath = waterLevelPath + "/" + waterL;
             long waterLevel0ID = H5.H5Gopen(fileID, waterLPath, H5P_DEFAULT);
-            String timeRecordInterval = String.valueOf(getShorttAttr(waterLevel0ID, "timeRecordInterval"));
+            String timeRecordInterval = String.valueOf(getShortAttr(waterLevel0ID, "timeRecordInterval"));
             String typeOfWaterLevelData = getEnumAttr(waterLevel0ID, "typeOfWaterLevelData");
             attrs.add(new TabularAttr("timeRecordInterval", waterLPath, timeRecordInterval));
             attrs.add(new TabularAttr("typeOfWaterLevelData", waterLPath, typeOfWaterLevelData));
@@ -465,7 +537,7 @@ public class S104Read {
         String commonPointRule = getStringAttr(waterLevelID, "commonPointRule");
         String dataCodingFormat = getEnumAttr(waterLevelID, "dataCodingFormat");
         String methodWaterLevelProduct = getStringAttr(waterLevelID, "methodWaterLevelProduct");
-        String numInstances = String.valueOf(getShorttAttr(waterLevelID, "numInstances"));
+        String numInstances = String.valueOf(getShortAttr(waterLevelID, "numInstances"));
 
         attrs.add(new TabularAttr("commonPointRule", waterLevelPath, commonPointRule));
         attrs.add(new TabularAttr("dataCodingFormat", waterLevelPath, dataCodingFormat));
@@ -499,7 +571,7 @@ public class S104Read {
         String issueDate = getStringAttr(rootID, "issueDate");
         String issueTime = getStringAttr(rootID, "issueTime");
         String metadata = getStringAttr(rootID, "metadata");
-        String verticalCS = String.valueOf(getShorttAttr(rootID, "verticalCS"));
+        String verticalCS = String.valueOf(getShortAttr(rootID, "verticalCS"));
         String verticalCoordinateBase = getEnumAttr(rootID, "verticalCoordinateBase");
         String verticalDatumReference = getEnumAttr(rootID, "verticalDatumReference");
         String waterLevelTrendThreshold = String.valueOf(getFloatAttr(rootID, "waterLevelTrendThreshold"));
@@ -543,7 +615,7 @@ public class S104Read {
         return value;
     }
 
-    private short getShorttAttr(long rootID, String attrName) {
+    private short getShortAttr(long rootID, String attrName) {
         //  short 2byte
         long attrID = H5.H5Aopen_by_name(rootID, ".", attrName, H5P_DEFAULT, H5P_DEFAULT);
         long attrTypeID = H5.H5Aget_type(attrID);
