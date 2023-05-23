@@ -17,8 +17,8 @@ public class S104Write {
         byte[][] bytes = new byte[][]{"1".getBytes(), "1".getBytes(),"1".getBytes(), "1".getBytes(),"1".getBytes(), "1".getBytes(),"1".getBytes(), "2".getBytes(),"3".getBytes(), "4".getBytes()};
         long l = H5.H5Tcopy(HDF5Constants.H5T_C_S1);
         H5.H5Tset_cset(l, HDF5Constants.H5T_CSET_UTF8);
-        H5.H5Tset_size(l, -1);
-        long tidCompound = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, -1);
+        H5.H5Tset_size(l, 2);
+        long tidCompound = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, 10);
         H5.H5Tinsert(tidCompound, "height", 0, HDF5Constants.H5T_NATIVE_FLOAT);
         H5.H5Tinsert(tidCompound, "trend", 4, HDF5Constants.H5T_NATIVE_INT);
         H5.H5Tinsert(tidCompound, "timePoint", 8, l);
@@ -39,7 +39,7 @@ public class S104Write {
                 HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, fValue2);
         H5.H5Tclose(tidCompoundTmp);
 
-        tidCompoundTmp = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, -1);
+        tidCompoundTmp = H5.H5Tcreate(HDF5Constants.H5T_COMPOUND, 2);
         H5.H5Tinsert(tidCompoundTmp, "timePoint", 0, l);
         H5.H5Dwrite_string(did, tidCompoundTmp,
                 HDF5Constants.H5S_ALL, HDF5Constants.H5S_ALL, HDF5Constants.H5P_DEFAULT, fValue3);
