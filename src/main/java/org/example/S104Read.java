@@ -744,7 +744,7 @@ public class S104Read {
         }
     }
 
-    private class ChartDataset {
+    public class ChartDataset {
         String name;
         ArrayList<Record> records;
 
@@ -763,9 +763,13 @@ public class S104Read {
         public void setName(String name) {
             this.name = name;
         }
+
+        public ArrayList<Record> getRecords() {
+            return records;
+        }
     }
 
-    private class Record {
+    public class Record {
         float Height;
         int Trend;
         String identifier;

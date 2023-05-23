@@ -3,7 +3,6 @@ package org.example;
 import hdf.hdf5lib.H5;
 import hdf.hdf5lib.HDF5Constants;
 import hdf.hdf5lib.structs.H5O_info_t;
-import javafx.scene.chart.ValueAxis;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -300,5 +299,8 @@ public class GetChartData {
         public void setValue(Object value) {
             this.value = value;
         }
+    }
+
+    public static class S104Write2 {
     }
 }
