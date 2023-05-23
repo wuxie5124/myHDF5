@@ -8,7 +8,8 @@ import static hdf.hdf5lib.H5.H5Tget_native_type;
 
 public class S104Write {
     public S104Write() {
-        String filePath = "C:\\Users\\zjm\\Desktop\\chart\\22222.h5";
+//        String filePath = "C:\\Users\\zjm\\Desktop\\chart\\22222.h5";
+        String filePath = "C:\\Users\\zhangjunmin\\Desktop\\22222.h5";
         long fileID = H5.H5Fcreate(filePath, HDF5Constants.H5F_ACC_TRUNC,
                 HDF5Constants.H5P_DEFAULT, HDF5Constants.H5P_DEFAULT);
         float fValue[] = new float[]{1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F, 7.0F, 8.0F, 9.0F, 10.0F};
